@@ -1,0 +1,71 @@
+version: '3.8'
+
+# HoneypotAI — Docker Compose
+# Objective 3: Modular Containerised Architecture
+# 3 containers: Redis, Detection Engine, Dashboard
+# Run with: docker-compose up -d
+
+services:
+
+  honeypot-redis:
+    image: redis:7-alpine
+    container_name: honeypot-redis
+    restart: unless-stopped
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - honeypot-net
+
+  honeypot-detection:
+    image: python:3.12-slim
+    container_name: honeypot-detection
+    restart: unless-stopped
+    depends_on:
+      honeypot-redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - REDIS_HOST=honeypot-redis
+      - REDIS_PORT=6379
+      - PYTHONUNBUFFERED=1
+    command: bash -c "pip install scikit-learn numpy pandas redis --quiet && python detection_engine.py"
+    networks:
+      - honeypot-net
+
+  honeypot-dashboard:
+    image: python:3.12-slim
+    container_name: honeypot-dashboard
+    restart: unless-stopped
+    depends_on:
+      - honeypot-redis
+      - honeypot-detection
+    ports:
+      - "9001:8501"
+    volumes:
+      - .:/app
+    working_dir: /app
+    environment:
+      - REDIS_HOST=honeypot-redis
+      - REDIS_PORT=6379
+      - PYTHONUNBUFFERED=1
+    command: bash -c "pip install streamlit plotly pandas scikit-learn numpy redis requests --quiet && streamlit run app.py --server.port 8501 --server.headless true --server.address 0.0.0.0 --browser.gatherUsageStats false"
+    networks:
+      - honeypot-net
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  honeypot-net:
+    driver: bridge

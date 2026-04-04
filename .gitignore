@@ -1,0 +1,9 @@
+data/attackers.json
+data/events.json
+models/models.pkl
+__pycache__/
+*.pyc
+.DS_Store
+nohup.out
+/tmp/
+*.log
