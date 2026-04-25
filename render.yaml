@@ -1,0 +1,35 @@
+services:
+  # ── NexaCorp Web Honeypot ─────────────────────────────────────────────────
+  - type: web
+    name: nexacorp-honeypot
+    runtime: python
+    plan: free
+    buildCommand: pip install redis
+    startCommand: python fake_website.py
+    envVars:
+      - key: PORT
+        value: 8888
+      - key: REDIS_URL
+        fromService:
+          name: honeypot-redis-db
+          type: redis
+          property: connectionString
+
+  # ── HoneypotAI Dashboard ──────────────────────────────────────────────────
+  - type: web
+    name: honeypotai-dashboard
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: REDIS_URL
+        fromService:
+          name: honeypot-redis-db
+          type: redis
+          property: connectionString
+
+  # ── Redis Database ────────────────────────────────────────────────────────
+  - type: redis
+    name: honeypot-redis-db
+    plan: free
+    maxmemoryPolicy: allkeys-lru

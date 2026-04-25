@@ -1,0 +1,16 @@
+# Large binary files — exclude from GitHub (too big for push)
+models/models.pkl
+models/metrics.json
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Generated data (re-created on VM)
+data/attackers.json
+data/events.json
+
+# Logs
+*.log
+nohup.out
